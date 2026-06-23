@@ -196,16 +196,18 @@ function updateKPIs(filteredData) {
   animateCounter(activeUsersEl, filteredData.uniqueUsers);
   animateCounter(activeSitesEl, filteredData.uniqueSites);
   
-  // Dynamic stickiness calculation based on the current hour range
-  const totalUsers = filteredData.uniqueUsers;
-  if (totalUsers === 0) {
-    stickinessEl.innerText = "0.0%";
-    return;
+  if (stickinessEl) {
+    // Dynamic stickiness calculation based on the current hour range
+    const totalUsers = filteredData.uniqueUsers;
+    if (totalUsers === 0) {
+      stickinessEl.innerText = "0.0%";
+      return;
+    }
+    
+    const singleTimeUsers = filteredData.userBins["1 time"];
+    const stickinessPct = (((totalUsers - singleTimeUsers) / totalUsers) * 100).toFixed(1);
+    stickinessEl.innerText = `${stickinessPct}%`;
   }
-  
-  const singleTimeUsers = filteredData.userBins["1 time"];
-  const stickinessPct = (((totalUsers - singleTimeUsers) / totalUsers) * 100).toFixed(1);
-  stickinessEl.innerText = `${stickinessPct}%`;
 }
 
 // Counter Animation Logic
@@ -478,6 +480,9 @@ function initSaoChart(filteredData) {
 
 // 5. User Engagement Vertical Column Chart
 function initEngagementChart(filteredData) {
+  const el = document.querySelector("#chart-engagement");
+  if (!el) return;
+  
   const bins = filteredData.userBins;
   const categories = Object.keys(bins);
   const seriesData = Object.values(bins);
