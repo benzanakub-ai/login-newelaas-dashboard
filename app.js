@@ -5,7 +5,7 @@ let charts = {};
 // Google Font Family for Charts
 const chartFontFamily = "'Inter', 'Noto Sans Thai', sans-serif";
 
-// Primary Dashboard Palette
+// Primary Dashboard Colors
 const chartColors = {
   primary: '#1e40af',     // Deep Royal Blue
   secondary: '#3b82f6',   // Sky Blue
@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Set up event listeners for filters
   document.getElementById('filter-date').addEventListener('change', handleFilterChange);
+  document.getElementById('filter-start-time').addEventListener('change', handleFilterChange);
+  document.getElementById('filter-end-time').addEventListener('change', handleFilterChange);
   document.getElementById('search-input').addEventListener('input', handleSearch);
   document.getElementById('btn-export-pdf').addEventListener('click', () => window.print());
   document.getElementById('btn-export-json').addEventListener('click', downloadDataJSON);
@@ -83,58 +85,133 @@ function initTabs() {
   });
 }
 
-// Initialize the KPI values, Charts, and Data Tables
+// Initialize the Dashboard
 function initDashboard() {
   if (!dashboardData) return;
-  
-  updateKPIs('all');
-  initHourlyChart('all');
-  initSitetypeChart('all');
-  initProvinceChart('all');
-  initSaoChart('all');
-  initEngagementChart();
-  populateTopPositionsTable(dashboardData.top_positions);
+  handleFilterChange(); // Perform initial calculations and chart drawing
 }
 
-// Update KPI metric cards dynamically
-function updateKPIs(dateFilter) {
+// Core Filtering Logic (Date + Time Range)
+function getFilteredData(dateFilter, startHour, endHour) {
+  let totalRows = 0;
+  const usersSet = new Set();
+  const sitesSet = new Set();
+  const sitetypes = {};
+  const provinces = {};
+  const positions = {};
+  const sao = {};
+  const hourlyTrends = Array(24).fill(0);
+  
+  // Track user login frequency in the filtered scope
+  const userFrequencyMap = new Map();
+  
+  const datesToProcess = dateFilter === 'all' ? dashboardData.dates : [dateFilter];
+  
+  datesToProcess.forEach(d => {
+    const dayData = dashboardData.hourly_data[d];
+    if (!dayData) return;
+    
+    for (let h = 0; h < 24; h++) {
+      const hourStr = String(h);
+      const hourData = dayData[hourStr];
+      if (!hourData) continue;
+      
+      // Build full hourly trends for plotting
+      hourlyTrends[h] += hourData.rows;
+      
+      // Filter by hour range for metrics and distributions
+      if (h >= startHour && h <= endHour) {
+        totalRows += hourData.rows;
+        
+        // Add users and sites to unique sets
+        hourData.users.forEach(uid => {
+          usersSet.add(uid);
+          userFrequencyMap.set(uid, (userFrequencyMap.get(uid) || 0) + 1);
+        });
+        hourData.sites.forEach(sid => sitesSet.add(sid));
+        
+        // Accumulate sitetypes
+        for (const [k, v] of Object.entries(hourData.sitetypes)) {
+          sitetypes[k] = (sitetypes[k] || 0) + v;
+        }
+        
+        // Accumulate provinces
+        for (const [k, v] of Object.entries(hourData.provinces)) {
+          provinces[k] = (provinces[k] || 0) + v;
+        }
+        
+        // Accumulate positions
+        for (const [k, v] of Object.entries(hourData.positions)) {
+          positions[k] = (positions[k] || 0) + v;
+        }
+        
+        // Accumulate sao
+        for (const [k, v] of Object.entries(hourData.sao)) {
+          sao[k] = (sao[k] || 0) + v;
+        }
+      }
+    }
+  });
+  
+  // Calculate dynamic user engagement bins
+  const userBins = {
+    "1 time": 0,
+    "2-5 times": 0,
+    "6-10 times": 0,
+    "11-20 times": 0,
+    "21-50 times": 0,
+    "51+ times": 0
+  };
+  
+  userFrequencyMap.forEach((count) => {
+    if (count === 1) userBins["1 time"]++;
+    else if (count >= 2 && count <= 5) userBins["2-5 times"]++;
+    else if (count >= 6 && count <= 10) userBins["6-10 times"]++;
+    else if (count >= 11 && count <= 20) userBins["11-20 times"]++;
+    else if (count >= 21 && count <= 50) userBins["21-50 times"]++;
+    else userBins["51+ times"]++;
+  });
+  
+  return {
+    totalRows,
+    uniqueUsers: usersSet.size,
+    uniqueSites: sitesSet.size,
+    sitetypes,
+    provinces,
+    positions,
+    sao,
+    hourlyTrends,
+    userBins
+  };
+}
+
+// Update KPI Metric Cards
+function updateKPIs(filteredData) {
   const totalEmailsEl = document.getElementById('kpi-total-emails');
   const activeUsersEl = document.getElementById('kpi-active-users');
   const activeSitesEl = document.getElementById('kpi-active-sites');
   const stickinessEl = document.getElementById('kpi-stickiness');
   
-  let totalLogs = 0;
-  let uniqueUsers = 0;
-  let uniqueSites = 0;
+  animateCounter(totalEmailsEl, filteredData.totalRows);
+  animateCounter(activeUsersEl, filteredData.uniqueUsers);
+  animateCounter(activeSitesEl, filteredData.uniqueSites);
   
-  if (dateFilter === 'all') {
-    totalLogs = dashboardData.overall.total_rows;
-    uniqueUsers = dashboardData.overall.unique_users;
-    uniqueSites = dashboardData.overall.unique_sites;
-  } else {
-    const stats = dashboardData.overall.daily_stats[dateFilter];
-    totalLogs = stats.total_rows;
-    uniqueUsers = stats.unique_users;
-    uniqueSites = stats.unique_sites;
+  // Dynamic stickiness calculation based on the current hour range
+  const totalUsers = filteredData.uniqueUsers;
+  if (totalUsers === 0) {
+    stickinessEl.innerText = "0.0%";
+    return;
   }
   
-  // Animate counters for premium feel
-  animateCounter(totalEmailsEl, totalLogs);
-  animateCounter(activeUsersEl, uniqueUsers);
-  animateCounter(activeSitesEl, uniqueSites);
-  
-  // Calculate retention rate (User engagement stickiness)
-  // Sticky users = total users who performed >1 transactions (all bins except "1 time")
-  const totalUsersGlobal = dashboardData.overall.unique_users;
-  const singleTimeUsers = dashboardData.user_bins["1 time"];
-  const stickinessPct = ((totalUsersGlobal - singleTimeUsers) / totalUsersGlobal * 100).toFixed(1);
+  const singleTimeUsers = filteredData.userBins["1 time"];
+  const stickinessPct = (((totalUsers - singleTimeUsers) / totalUsers) * 100).toFixed(1);
   stickinessEl.innerText = `${stickinessPct}%`;
 }
 
-// Counter animation logic
+// Counter Animation Logic
 function animateCounter(element, targetValue) {
   let startTimestamp = null;
-  const duration = 1000; // 1 second animation
+  const duration = 800; // 0.8 seconds animation
   
   const step = (timestamp) => {
     if (!startTimestamp) startTimestamp = timestamp;
@@ -151,30 +228,21 @@ function animateCounter(element, targetValue) {
   window.requestAnimationFrame(step);
 }
 
-// 1. Hourly Trend Area Chart
-function initHourlyChart(dateFilter) {
+// 1. Hourly Trend Area Chart (updates to show only the selected hour range)
+function initHourlyChart(filteredData, startHour, endHour) {
+  let categories = [];
   let seriesData = [];
-  let categories = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
   
-  if (dateFilter === 'all') {
-    // Show combined hourly distribution
-    seriesData = [
-      {
-        name: 'ทราฟฟิกรวม (3 วัน)',
-        data: dashboardData.hourly_trends.combined
-      }
-    ];
-  } else {
-    seriesData = [
-      {
-        name: `ธุรกรรมวันที่ ${dateFilter}`,
-        data: dashboardData.hourly_trends[dateFilter]
-      }
-    ];
+  for (let h = startHour; h <= endHour; h++) {
+    categories.push(`${String(h).padStart(2, '0')}:00`);
+    seriesData.push(filteredData.hourlyTrends[h]);
   }
   
   const options = {
-    series: seriesData,
+    series: [{
+      name: 'ปริมาณธุรกรรม',
+      data: seriesData
+    }],
     chart: {
       type: 'area',
       height: 350,
@@ -234,19 +302,10 @@ function initHourlyChart(dateFilter) {
 }
 
 // 2. Organization Type Donut Chart
-function initSitetypeChart(dateFilter) {
-  let series = [];
-  let labels = [];
-  
-  if (dateFilter === 'all') {
-    const dist = dashboardData.sitetype_dist;
-    labels = Object.keys(dist);
-    series = Object.values(dist);
-  } else {
-    const dist = dashboardData.sitetype_by_date[dateFilter];
-    labels = Object.keys(dist);
-    series = Object.values(dist);
-  }
+function initSitetypeChart(filteredData) {
+  const dist = filteredData.sitetypes;
+  const labels = Object.keys(dist);
+  const series = Object.values(dist);
   
   const options = {
     series: series,
@@ -270,13 +329,13 @@ function initSitetypeChart(dateFilter) {
             show: true,
             total: {
               show: true,
-              label: 'ธุรกรรมทั้งหมด',
+              label: 'ธุรกรรมช่วงที่เลือก',
               formatter: function (w) {
                 const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
                 return total.toLocaleString('th-TH') + ' ครั้ง';
               },
               style: {
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: '600',
                 color: chartColors.muted
               }
@@ -303,20 +362,17 @@ function initSitetypeChart(dateFilter) {
   }
 }
 
-// 3. Top Provinces Horizontal Bar Chart
-function initProvinceChart(dateFilter) {
-  let seriesData = [];
-  let categories = [];
+// 3. Top Provinces Horizontal Bar Chart (shows top 10 dynamically)
+function initProvinceChart(filteredData) {
+  const dist = filteredData.provinces;
   
-  if (dateFilter === 'all') {
-    const dist = dashboardData.top_provinces;
-    categories = Object.keys(dist);
-    seriesData = Object.values(dist);
-  } else {
-    const dist = dashboardData.province_by_date[dateFilter];
-    categories = Object.keys(dist);
-    seriesData = Object.values(dist);
-  }
+  // Sort and take top 10 provinces in this time range
+  const sortedProvinces = Object.entries(dist)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+    
+  const categories = sortedProvinces.map(p => p[0]);
+  const seriesData = sortedProvinces.map(p => p[1]);
   
   const options = {
     series: [{
@@ -378,20 +434,11 @@ function initProvinceChart(dateFilter) {
   }
 }
 
-// 4. Audit connection (สตง.) Donut Chart
-function initSaoChart(dateFilter) {
-  let series = [];
-  let labels = [];
-  
-  if (dateFilter === 'all') {
-    const dist = dashboardData.sao_dist;
-    labels = Object.keys(dist);
-    series = Object.values(dist);
-  } else {
-    const dist = dashboardData.sao_by_date[dateFilter];
-    labels = Object.keys(dist);
-    series = Object.values(dist);
-  }
+// 4. Audit Connection Donut Chart
+function initSaoChart(filteredData) {
+  const dist = filteredData.sao;
+  const labels = Object.keys(dist);
+  const series = Object.values(dist);
   
   const options = {
     series: series,
@@ -408,8 +455,7 @@ function initSaoChart(dateFilter) {
     },
     dataLabels: {
       enabled: true,
-      formatter: function (val, opts) {
-        // Since СТГ is extremely small, display actual count or percentage with 3 decimal points
+      formatter: function (val) {
         return val < 1 ? val.toFixed(3) + "%" : val.toFixed(1) + "%";
       }
     },
@@ -431,8 +477,8 @@ function initSaoChart(dateFilter) {
 }
 
 // 5. User Engagement Vertical Column Chart
-function initEngagementChart() {
-  const bins = dashboardData.user_bins;
+function initEngagementChart(filteredData) {
+  const bins = filteredData.userBins;
   const categories = Object.keys(bins);
   const seriesData = Object.values(bins);
   
@@ -492,16 +538,24 @@ function initEngagementChart() {
   }
 }
 
-// Populate the detailed Roles / Positions Table
+// Populate the Positions Table (shows top 15 dynamically based on time range)
 function populateTopPositionsTable(positionsData) {
   const tableBody = document.querySelector('#table-positions-body');
   tableBody.innerHTML = '';
   
-  const positionsArray = Object.entries(positionsData).map(([name, count]) => ({ name, count }));
-  // Find max count for progress bars
-  const maxCount = Math.max(...positionsArray.map(p => p.count));
+  const sortedPositions = Object.entries(positionsData)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([name, count]) => ({ name, count }));
+    
+  if (sortedPositions.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--color-text-muted); padding: 2rem;">ไม่มีข้อมูลในช่วงเวลาที่เลือก</td></tr>`;
+    return;
+  }
   
-  positionsArray.forEach((pos, index) => {
+  const maxCount = Math.max(...sortedPositions.map(p => p.count));
+  
+  sortedPositions.forEach((pos, index) => {
     const percentage = ((pos.count / maxCount) * 100).toFixed(0);
     const rowHtml = `
       <tr>
@@ -524,34 +578,53 @@ function populateTopPositionsTable(positionsData) {
   });
 }
 
-// Handle Dropdown Filter Changes
+// Handle Filter Changes (Date + Time range change)
 function handleFilterChange() {
   const dateFilter = document.getElementById('filter-date').value;
+  let startHour = parseInt(document.getElementById('filter-start-time').value);
+  let endHour = parseInt(document.getElementById('filter-end-time').value);
   
-  // Show loader briefly to indicate loading transition
+  // Guard clause: ensure startHour is less than or equal to endHour
+  if (startHour > endHour) {
+    document.getElementById('filter-end-time').value = startHour;
+    endHour = startHour;
+  }
+  
+  // Show loader overlay briefly for the transition
   const loader = document.getElementById('loader');
-  document.getElementById('loader-text').innerText = 'กำลังคำนวณและดึงข้อมูลตัวกรอง...';
+  document.getElementById('loader-text').innerText = 'กำลังคำนวณและประมวลผลข้อมูลช่วงเวลา...';
   loader.style.opacity = '0.7';
   loader.style.display = 'flex';
   
   setTimeout(() => {
-    updateKPIs(dateFilter);
-    initHourlyChart(dateFilter);
-    initSitetypeChart(dateFilter);
-    initProvinceChart(dateFilter);
-    initSaoChart(dateFilter);
+    // 1. Process data for current filters
+    const filteredData = getFilteredData(dateFilter, startHour, endHour);
     
+    // 2. Update UI components
+    updateKPIs(filteredData);
+    initHourlyChart(filteredData, startHour, endHour);
+    initSitetypeChart(filteredData);
+    initProvinceChart(filteredData);
+    initSaoChart(filteredData);
+    initEngagementChart(filteredData);
+    populateTopPositionsTable(filteredData.positions);
+    
+    // Search filter check in case search bar is not empty
+    handleSearch();
+    
+    // 3. Hide loader
     loader.style.opacity = '0';
     setTimeout(() => loader.style.display = 'none', 200);
-  }, 200);
+  }, 100);
 }
 
-// Handle Real-time Search Filter for Positions Table
+// Handle Search Filter inside the Positions Table
 function handleSearch() {
   const query = document.getElementById('search-input').value.toLowerCase().trim();
   const rows = document.querySelectorAll('#table-positions-body tr');
   
   rows.forEach(row => {
+    if (row.cells.length < 2) return; // Skip empty row warning
     const positionName = row.cells[1].innerText.toLowerCase();
     if (positionName.includes(query)) {
       row.style.display = '';
@@ -561,39 +634,36 @@ function handleSearch() {
   });
 }
 
-// Export Filtered data as JSON file download
+// Export Filtered Data as JSON File
 function downloadDataJSON() {
   if (!dashboardData) return;
   
   const dateFilter = document.getElementById('filter-date').value;
-  let exportData = {};
+  const startHour = parseInt(document.getElementById('filter-start-time').value);
+  const endHour = parseInt(document.getElementById('filter-end-time').value);
   
-  if (dateFilter === 'all') {
-    exportData = {
-      description: "Email volume log report (All 3 days)",
-      overall: dashboardData.overall,
-      hourly_trends: dashboardData.hourly_trends.combined,
-      sitetype_dist: dashboardData.sitetype_dist,
-      top_provinces: dashboardData.top_provinces,
-      top_positions: dashboardData.top_positions,
-      sao_dist: dashboardData.sao_dist
-    };
-  } else {
-    exportData = {
-      description: `Email volume log report for date ${dateFilter}`,
-      date: dateFilter,
-      stats: dashboardData.overall.daily_stats[dateFilter],
-      hourly_trends: dashboardData.hourly_trends[dateFilter],
-      sitetype_dist: dashboardData.sitetype_by_date[dateFilter],
-      top_provinces: dashboardData.province_by_date[dateFilter],
-      sao_dist: dashboardData.sao_by_date[dateFilter]
-    };
-  }
+  const filteredData = getFilteredData(dateFilter, startHour, endHour);
+  
+  const exportData = {
+    description: `Login volume log report for date=${dateFilter} and hours=${startHour}:00-${endHour}:00`,
+    date: dateFilter,
+    startHour: `${startHour}:00`,
+    endHour: `${endHour}:00`,
+    kpis: {
+      total_rows: filteredData.totalRows,
+      unique_users: filteredData.uniqueUsers,
+      unique_sites: filteredData.uniqueSites
+    },
+    sitetype_dist: filteredData.sitetypes,
+    top_provinces: filteredData.provinces,
+    top_positions: filteredData.positions,
+    sao_dist: filteredData.sao
+  };
   
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
   const downloadAnchor = document.createElement('a');
   downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `email_volume_report_${dateFilter}.json`);
+  downloadAnchor.setAttribute("download", `login_volume_report_${dateFilter}_hours_${startHour}_to_${endHour}.json`);
   document.body.appendChild(downloadAnchor);
   downloadAnchor.click();
   downloadAnchor.remove();

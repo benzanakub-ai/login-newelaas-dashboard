@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบวิเคราะห์ข้อมูลการ login ท้องถิ่น (E-Gov Login Transaction Analytics)</title>
+  
+  <!-- Tailwind CSS not requested; using customized Vanilla CSS -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- CDNs for Premium Libraries -->
+  <!-- ApexCharts for modern charts and transitions -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <!-- Lucide Icons for clean vector-only icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- Premium Loader Overlay -->
+  <div id="loader" class="loader-overlay">
+    <div id="spinner" class="spinner"></div>
+    <p id="loader-text">กำลังโหลดข้อมูลและจำลองโครงสร้างข้อมูลระบบ...</p>
+  </div>
+
+  <!-- Header Section with Premium Gradient -->
+  <header>
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <i data-lucide="mail-search" style="width: 24px; height: 24px;"></i>
+        </div>
+        <div class="brand-text">
+          <h1>ระบบวิเคราะห์ปริมาณการ login ท้องถิ่น</h1>
+          <p>E-Government Login Transaction Analytics & Business Insights</p>
+        </div>
+      </div>
+      <div class="time-badge">
+        <i data-lucide="calendar"></i>
+        <span>อัปเดตล่าสุด: 23 มิถุนายน 2026</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Wrapper -->
+  <main class="dashboard-wrapper">
+    
+    <!-- Filter and Actions Toolbar -->
+    <section class="control-bar" aria-label="แถบควบคุมและกรองข้อมูล">
+      <div class="filters-group">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="filter" style="width: 18px; height: 18px; color: var(--color-primary);"></i>
+          <label for="filter-date" class="filter-label">ตัวเลือกวันที่:</label>
+        </div>
+        <select id="filter-date" class="select-custom" aria-label="เลือกวันที่ฟิลเตอร์">
+          <option value="all">แสดงภาพรวมสะสม (3 วัน)</option>
+          <option value="2026-06-02">2026-06-02 (วันอังคาร)</option>
+          <option value="2026-06-04">2026-06-04 (วันพฤหัสบดี)</option>
+          <option value="2026-06-23">2026-06-23 (วันนี้ - ข้อมูลบางส่วน)</option>
+        </select>
+      </div>
+
+      <div class="filters-group">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <i data-lucide="clock" style="width: 18px; height: 18px; color: var(--color-primary);"></i>
+          <label for="filter-start-time" class="filter-label">ช่วงเวลา:</label>
+        </div>
+        <select id="filter-start-time" class="select-custom" style="padding-right: 1.75rem;" aria-label="เลือกเวลาเริ่มต้น">
+          <option value="0" selected>00:00</option>
+          <option value="1">01:00</option>
+          <option value="2">02:00</option>
+          <option value="3">03:00</option>
+          <option value="4">04:00</option>
+          <option value="5">05:00</option>
+          <option value="6">06:00</option>
+          <option value="7">07:00</option>
+          <option value="8">08:00</option>
+          <option value="9">09:00</option>
+          <option value="10">10:00</option>
+          <option value="11">11:00</option>
+          <option value="12">12:00</option>
+          <option value="13">13:00</option>
+          <option value="14">14:00</option>
+          <option value="15">15:00</option>
+          <option value="16">16:00</option>
+          <option value="17">17:00</option>
+          <option value="18">18:00</option>
+          <option value="19">19:00</option>
+          <option value="20">20:00</option>
+          <option value="21">21:00</option>
+          <option value="22">22:00</option>
+          <option value="23">23:00</option>
+        </select>
+        <span class="filter-label" style="font-weight: 400; color: var(--color-text-muted);">ถึง</span>
+        <select id="filter-end-time" class="select-custom" style="padding-right: 1.75rem;" aria-label="เลือกเวลาสิ้นสุด">
+          <option value="0">00:00</option>
+          <option value="1">01:00</option>
+          <option value="2">02:00</option>
+          <option value="3">03:00</option>
+          <option value="4">04:00</option>
+          <option value="5">05:00</option>
+          <option value="6">06:00</option>
+          <option value="7">07:00</option>
+          <option value="8">08:00</option>
+          <option value="9">09:00</option>
+          <option value="10">10:00</option>
+          <option value="11">11:00</option>
+          <option value="12">12:00</option>
+          <option value="13">13:00</option>
+          <option value="14">14:00</option>
+          <option value="15">15:00</option>
+          <option value="16">16:00</option>
+          <option value="17">17:00</option>
+          <option value="18">18:00</option>
+          <option value="19">19:00</option>
+          <option value="20">20:00</option>
+          <option value="21">21:00</option>
+          <option value="22">22:00</option>
+          <option value="23" selected>23:00</option>
+        </select>
+      </div>
+      
+      <div class="actions-group">
+        <button id="btn-export-pdf" class="btn-secondary" title="พิมพ์รายงานสรุป">
+          <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
+          <span>พิมพ์รายงาน</span>
+        </button>
+        <button id="btn-export-json" class="btn-premium" title="ดาวน์โหลดชุดข้อมูลที่กรองแล้ว">
+          <i data-lucide="download" style="width: 16px; height: 16px;"></i>
+          <span>ดาวน์โหลดข้อมูล JSON</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- KPI Metric Cards Grid -->
+    <section class="kpi-grid" aria-label="ดัชนีชี้วัดประสิทธิภาพหลัก">
+      <!-- KPI Card 1: Total volume -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">ปริมาณการ login สะสม</span>
+          <div class="kpi-icon-wrapper">
+            <i data-lucide="log-in" style="width: 20px; height: 20px;"></i>
+          </div>
+        </div>
+        <div id="kpi-total-emails" class="kpi-value">0</div>
+        <div class="kpi-trend up">
+          <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i>
+          <span>ธุรกรรม login ผ่านระบบทั้งหมด</span>
+        </div>
+      </div>
+
+      <!-- KPI Card 2: Active Users -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">จำนวนผู้ใช้งานสะสม</span>
+          <div class="kpi-icon-wrapper">
+            <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+          </div>
+        </div>
+        <div id="kpi-active-users" class="kpi-value">0</div>
+        <div class="kpi-trend up">
+          <i data-lucide="user-check" style="width: 14px; height: 14px;"></i>
+          <span>จำนวนผู้ login ที่ไม่ซ้ำกัน</span>
+        </div>
+      </div>
+
+      <!-- KPI Card 3: Active Sites -->
+      <div class="kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-title">หน่วยงานท้องถิ่นที่ใช้งาน</span>
+          <div class="kpi-icon-wrapper">
+            <i data-lucide="building-2" style="width: 20px; height: 20px;"></i>
+          </div>
+        </div>
+        <div id="kpi-active-sites" class="kpi-value">0</div>
+        <div class="kpi-trend up">
+          <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i>
+          <span>อบต. และ เทศบาลสะสม</span>
+        </div>
+      </div>
+
+      <!-- KPI Card 4: Stickiness -->
+      <div class="kpi-card accent">
+        <div class="kpi-header">
+          <span class="kpi-title">อัตราการใช้งานซ้ำ (Stickiness)</span>
+          <div class="kpi-icon-wrapper">
+            <i data-lucide="heart" style="width: 20px; height: 20px;"></i>
+          </div>
+        </div>
+        <div id="kpi-stickiness" class="kpi-value">0%</div>
+        <div class="kpi-trend" style="color: var(--color-accent);">
+          <i data-lucide="repeat" style="width: 14px; height: 14px;"></i>
+          <span>สัดส่วนผู้ใช้ส่งข้อมูลมากกว่า 1 ครั้ง</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts Row 1: Primary Metrics -->
+    <section class="charts-grid" aria-label="กราฟวิเคราะห์ธุรกรรมรายชั่วโมงและการเชื่อมต่อหน่วยงานตรวจสอบ">
+      <!-- Hourly log volume -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>แนวโน้มปริมาณการ login รายชั่วโมง (Hourly Login Traffic Trend)</h3>
+            <p>วิเคราะห์ตามเวลาทำการราชการเพื่อจัดระเบียบโครงสร้างเซิร์ฟเวอร์</p>
+          </div>
+          <i data-lucide="clock" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+        </div>
+        <div id="chart-hourly" style="min-height: 350px;"></div>
+      </div>
+
+      <!-- Audit agency integration (สตง.) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>การส่งรายงานหน่วยงานตรวจสอบ</h3>
+            <p>วิเคราะห์สัดส่วนการส่งข้อมูลตรงไป สตง.</p>
+          </div>
+          <i data-lucide="activity" style="color: var(--color-accent); width: 20px; height: 20px;"></i>
+        </div>
+        <div id="chart-sao" style="min-height: 280px; display: flex; align-items: center; justify-content: center;"></div>
+      </div>
+    </section>
+
+    <!-- Charts Row 2: Secondary Distributions -->
+    <section class="distributions-row" aria-label="กราฟการกระจายสถิติตามลักษณะงานและพื้นที่">
+      <!-- Sitetype Distribution -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>สัดส่วนประเภทของหน่วยงาน</h3>
+            <p>แยกตาม อบต. และเทศบาลประเภทต่างๆ</p>
+          </div>
+          <i data-lucide="pie-chart" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+        </div>
+        <div id="chart-sitetype" style="min-height: 320px;"></div>
+      </div>
+
+      <!-- Top Provinces Bar Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>จังหวัดที่มีการใช้งานสูงสุด</h3>
+            <p>จังหวัดที่มียอดธุรกรรมสะสม 10 อันดับแรก</p>
+          </div>
+          <i data-lucide="map" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+        </div>
+        <div id="chart-province" style="min-height: 320px;"></div>
+      </div>
+
+      <!-- User engagement column chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>ความถี่การใช้งานรายบุคคล</h3>
+            <p>จำนวนครั้งในการทำธุรกรรมของผู้ใช้งานที่ไม่ซ้ำกัน</p>
+          </div>
+          <i data-lucide="bar-chart-2" style="color: var(--color-accent); width: 20px; height: 20px;"></i>
+        </div>
+        <div id="chart-engagement" style="min-height: 280px;"></div>
+      </div>
+    </section>
+
+    <!-- Interactive Navigation Tabs Section -->
+    <section class="tab-section" aria-label="รายละเอียดสถิติตามหัวข้อและบทวิเคราะห์">
+      <nav class="tab-nav" aria-label="แท็บเนื้อหา">
+        <button class="tab-button active" data-tab="tab-positions" aria-selected="true">
+          <i data-lucide="award" style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.35rem;"></i>
+          สายงาน/ตำแหน่งที่ใช้งานสูงสุด
+        </button>
+        <button class="tab-button" data-tab="tab-analysis" aria-selected="false">
+          <i data-lucide="file-text" style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 0.35rem;"></i>
+          บทวิเคราะห์เชิงลึกและคำแนะนำเชิงธุรกิจ
+        </button>
+      </nav>
+
+      <!-- Tab Content 1: Top positions list -->
+      <div id="tab-positions" class="tab-content active">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div class="chart-title-group">
+            <h3 style="font-size: 1.1rem; color: var(--color-foreground);">รายชื่อตำแหน่งที่มีปริมาณงานสูงสุด</h3>
+            <p>วิเคราะห์สายงานเพื่อต่อยอดพัฒนาฟีเจอร์แบบเฉพาะเจาะจง (Targeted Features)</p>
+          </div>
+          <div class="search-box">
+            <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
+            <input type="text" id="search-input" class="search-input" placeholder="ค้นหาชื่อตำแหน่ง...">
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="data-table" aria-label="ตารางแสดงตำแหน่งงานและจำนวนธุรกรรม">
+            <thead>
+              <tr>
+                <th>อันดับ</th>
+                <th>สายงาน/ตำแหน่ง</th>
+                <th style="text-align: right;">จำนวนธุรกรรม (ครั้ง)</th>
+                <th>สัดส่วนเมื่อเทียบกับอันดับ 1</th>
+              </tr>
+            </thead>
+            <tbody id="table-positions-body">
+              <!-- Dynamically populated from JS -->
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--color-text-muted); padding: 2rem;">กำลังประมวลผลข้อมูล...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Business Analysis -->
+      <div id="tab-analysis" class="tab-content">
+        <article class="analysis-body">
+          
+          <div class="analysis-section">
+            <h4>
+              <i data-lucide="trending-up" style="width: 20px; height: 20px;"></i>
+              แนวโน้มพฤติกรรมการใช้งานตามช่วงเวลา (Hourly Patterns)
+            </h4>
+            <p>
+              จากการวิเคราะห์พฤติกรรมธุรกรรมรายชั่วโมง พบลักษณะของ <strong>Office Hour Pattern</strong> ที่เด่นชัด มีแนวโน้มการใช้งานสูงสุดในช่วงเวลา <strong>09:00 น. - 10:00 น.</strong> (คิดเป็นสัดส่วนสูงที่สุดกว่า 134,430 ธุรกรรม) และเกิดปริมาณงานหนาแน่นอีกรอบในช่วง <strong>13:00 - 14:00 น.</strong> โดยจะเกิดหลุมลดลงชัดเจนในช่วงเวลาพักกลางวัน (12:00 - 13:00 น.) 
+            </p>
+            <div class="recommendations-box">
+              <h5>💡 ข้อเสนอแนะเชิงกลยุทธ์ด้านโครงสร้างพื้นฐาน (IT Infrastructure):</h5>
+              <ul>
+                <li><strong>ระบบเซิร์ฟเวอร์สำรองและการอัปเกรด:</strong> หลีกเลี่ยงการจัดตารางปิดระบบหรือทดสอบในชั่วโมงพีค (Peak Hours) แนะนำให้ใช้หน้าต่างปรับปรุงระบบช่วงเวลา 12:00 - 13:00 น. หรือช่วงหลัง 18:00 น.</li>
+                <li><strong>Dynamic Server Scaling:</strong> ตั้งค่า Auto-scaling ของ Cloud Hosting ให้ขยายศักยภาพการรองรับช่วงเวลา 08:30 - 15:30 น. และตัดทอนกำลังลงนอกเวลาราชการเพื่อประหยัดต้นทุนสะสม</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="analysis-section">
+            <h4>
+              <i data-lucide="target" style="width: 20px; height: 20px;"></i>
+              เจาะลึกกลุ่มผู้ใช้หลักและโอกาสเพิ่มฟีเจอร์พรีเมียม (User Personas & Upselling)
+            </h4>
+            <p>
+              กลุ่มผู้ใช้ระดับสูงที่ทำปริมาณการ login เป็นหลัก ได้แก่ <strong>นักวิชาการเงินและบัญชี</strong>, <strong>ผู้อำนวยการกองคลัง</strong>, และ <strong>ผู้ช่วยเจ้าพนักงานธุรการ</strong> สะท้อนว่ากิจกรรมการ login นี้เป็นส่วนหนึ่งของธุรกรรมทางการเงินและการเข้าใช้งานระบบงานของท้องถิ่นเป็นสำคัญ
+            </p>
+            <div class="recommendations-box">
+              <h5>💡 ข้อเสนอแนะการสร้างรายได้เพิ่ม (Revenue & Product Development):</h5>
+              <ul>
+                <li><strong>ฟีเจอร์รายงานอัตโนมัติ:</strong> พัฒนา Feature ออกใบเสร็จรับเงินอิเล็กทรอนิกส์หรือระบบรายงานการคลังท้องถิ่นจัดส่งตรงถึงประชาชนผู้เสียภาษีผ่านอีเมล/SMS แบบอัตโนมัติ</li>
+                <li><strong>ระบบอนุมัติเอกสารสำหรับหัวหน้ากอง:</strong> ออกแบบ Workflow อำนวยความสะดวกสำหรับตำแหน่ง ผอ.กองคลัง ให้สามารถตรวจเช็คความถูกต้องและกดอนุมัติการจ่ายเงิน/ออกรายงานได้สะดวกบนสมาร์ทโฟน</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="analysis-section">
+            <h4>
+              <i data-lucide="shield-alert" style="width: 20px; height: 20px;"></i>
+              สัดส่วนการเชื่อมโยงสำนักงานตรวจเงินแผ่นดิน (สตง. Integration)
+            </h4>
+            <p>
+              ข้อมูลสถิติชี้ให้เห็นว่า สัดส่วนการตั้งค่าระบบเพื่อเชื่อมโยงกับทาง สตง. (สำนักงานการตรวจเงินแผ่นดิน) มีอัตราส่วน <strong>น้อยเป็นประวัติการณ์เพียง 0.06%</strong> (499 รายการจากเกือบแปดแสนรายการ) ในขณะที่ท้องถิ่นกว่า 99.94% ไม่ใช้การตั้งค่านี้
+            </p>
+            <div class="analysis-callout">
+              <h5>⚠️ ข้อควรระวังและโอกาสครั้งใหญ่ทางการตลาด:</h5>
+              <p>อัตราส่วนนี้บ่งชี้ว่าฟีเจอร์การตรวจสอบ/ส่งข้อมูลตรวจสอบตรงกับ สตง. ยังขาดการประชาสัมพันธ์อย่างกว้างขวาง หรือมีข้อจำกัดในการเชื่อมต่อที่เป็นปัญหา (Friction) ในมุมผู้ใช้งาน</p>
+              <p style="font-weight: 600;">กลยุทธ์แก้ไข:</p>
+              <ul style="padding-left: 1.2rem; font-size: 0.9rem;">
+                <li>พัฒนา UI/UX แนะนำขั้นตอนการเปิดใช้งานส่งข้อมูล สตง. ให้เป็นแบบกึ่งอัตโนมัติ (Onboarding Tutorial Wizard)</li>
+                <li>ออกเอกสารคู่มือกรณีศึกษาความสำเร็จของการใช้ฟีเจอร์นี้ในการทำงบประมาณอย่างโปร่งใส เพื่อกระตุ้นให้องค์กรอื่นๆ ตั้งค่าตาม</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="analysis-section">
+            <h4>
+              <i data-lucide="globe" style="width: 20px; height: 20px;"></i>
+              การเติบโตเชิงภูมิศาสตร์และเป้าหมายการโฆษณา (Geographic Expansion)
+            </h4>
+            <p>
+              จังหวัดที่เป็นแหล่งขับเคลื่อนปริมาณธุรกรรมสูงสุดคือ <strong>นครราชสีมา</strong> (32,111 ครั้ง), <strong>เชียงใหม่</strong> (24,891 ครั้ง) และ <strong>อุบลราชธานี</strong> (24,639 ครั้ง) ซึ่งเป็นจังหวัดขนาดใหญ่ที่มี อบต. และเทศบาลตำบลรวมกันมากที่สุดในประเทศ
+            </p>
+            <div class="recommendations-box">
+              <h5>💡 แนวคิดเพื่อขยายฐานธุรกิจ:</h5>
+              <ul>
+                <li><strong>แคมเปญการตลาดตามพื้นที่ (Local Targeted Marketing):</strong> ใช้ อบต. ในจังหวัดนครราชสีมาและเชียงใหม่เป็นผู้นำเพื่อผลักดันให้ท้องถิ่นในอำเภอและจังหวัดใกล้เคียง (เช่น ชัยภูมิ บุรีรัมย์ ลำพูน แม่ฮ่องสอน) หันมาใช้งานระบบในรูปแบบเดียวกัน</li>
+                <li><strong>จัดทำข้อเสนอพิเศษสำหรับเทศบาลขนาดใหญ่:</strong> กลุ่มพื้นที่เศรษฐกิจสูงในจังหวัดท่องเที่ยว เช่น เชียงใหม่ และชลบุรี มีศักยภาพพร้อมในการลงทุนระบบพรีเมียม ควรเข้าเสนอแผน Enterprise package เพื่อยกระดับความปลอดภัยข้อมูลการคลัง</li>
+              </ul>
+            </div>
+          </div>
+
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div style="max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <p>© 2026 E-Government Login Analytics System. สงวนลิขสิทธิ์.</p>
+      <p>พัฒนาขึ้นด้วยมาตรฐาน UI/UX Pro Max และระบบวิเคราะห์ข้อมูลขั้นสูง</p>
+    </div>
+  </footer>
+
+  <!-- Lucide Icons initialization script -->
+  <script>
+    lucide.createIcons();
+  </script>
+  
+  <!-- Core dashboard controller -->
+  <script src="app.js"></script>
+</body>
+</html>
