@@ -88,7 +88,44 @@ function initTabs() {
 // Initialize the Dashboard
 function initDashboard() {
   if (!dashboardData) return;
+  
+  // สร้างตัวเลือกวันที่ในเมนู Dropdown และ ป้ายอัปเดตล่าสุด แบบ Dynamic ตามข้อมูลจริง
+  populateDateDropdown();
+  
   handleFilterChange(); // Perform initial calculations and chart drawing
+}
+
+// เจนเนอเรตตัวเลือกวันที่ตามข้อมูลที่มีจริงในไฟล์ JSON อัตโนมัติ
+function populateDateDropdown() {
+  const dateSelect = document.getElementById('filter-date');
+  if (!dateSelect) return;
+  
+  // ดึงรายชื่อวันจากข้อมูลดิบ (ดึงจาก ดัชนี .dates หรือ คีย์ย่อยของ .hourly_data)
+  const dates = dashboardData.dates || Object.keys(dashboardData.hourly_data || {});
+  
+  // เคลียร์เมนูเดิมที่เป็น Hardcode ออกให้หมด
+  dateSelect.innerHTML = '';
+  
+  // สร้างตัวเลือกแรก: แสดงภาพรวมสะสมทั้งหมด
+  const allOption = document.createElement('option');
+  allOption.value = 'all';
+  allOption.textContent = `แสดงภาพรวมสะสม (${dates.length} วัน)`;
+  dateSelect.appendChild(allOption);
+  
+  // วนลูปนำวันที่จริงจากเอ็กเซลมาเพิ่มใน Dropdown
+  dates.forEach(date => {
+    const option = document.createElement('option');
+    option.value = date;
+    option.textContent = date; // แสดงฟอร์แมตวันที่ตามไฟล์จริง
+    dateSelect.appendChild(option);
+  });
+  
+  // อัปเดตตัวเลขป้าย 'อัปเดตล่าสุด' ที่หัวเว็บขวาบน โดยอิงจากวันที่ล่าสุดในไฟล์ข้อมูล
+  const timeBadgeSpan = document.querySelector('.time-badge span');
+  if (timeBadgeSpan && dates.length > 0) {
+    const latestDate = dates[dates.length - 1]; // เลือกวันสุดท้ายในชุดข้อมูลที่เรียงแล้ว
+    timeBadgeSpan.innerText = `อัปเดตล่าสุด: ${latestDate}`;
+  }
 }
 
 // Core Filtering Logic (Date + Time Range)
@@ -105,7 +142,7 @@ function getFilteredData(dateFilter, startHour, endHour) {
   // Track user login frequency in the filtered scope
   const userFrequencyMap = new Map();
   
-  const datesToProcess = dateFilter === 'all' ? dashboardData.dates : [dateFilter];
+  const datesToProcess = dateFilter === 'all' ? (dashboardData.dates || Object.keys(dashboardData.hourly_data || {})) : [dateFilter];
   
   datesToProcess.forEach(d => {
     const dayData = dashboardData.hourly_data[d];
