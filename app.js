@@ -138,6 +138,7 @@ function getFilteredData(dateFilter, startHour, endHour) {
   const positions = {};
   const sao = {};
   const hourlyTrends = Array(24).fill(0);
+  const minuteTrends = Array(1440).fill(0);
   
   // Track user login frequency in the filtered scope
   const userFrequencyMap = new Map();
@@ -147,6 +148,13 @@ function getFilteredData(dateFilter, startHour, endHour) {
   datesToProcess.forEach(d => {
     const dayData = dashboardData.hourly_data[d];
     if (!dayData) return;
+    
+    // Accumulate minute trends
+    if (dayData.minute_trends) {
+      for (let m = 0; m < 1440; m++) {
+        minuteTrends[m] += dayData.minute_trends[m] || 0;
+      }
+    }
     
     for (let h = 0; h < 24; h++) {
       const hourStr = String(h);
@@ -218,6 +226,7 @@ function getFilteredData(dateFilter, startHour, endHour) {
     positions,
     sao,
     hourlyTrends,
+    minuteTrends,
     userBins
   };
 }
@@ -272,14 +281,23 @@ function initHourlyChart(filteredData, startHour, endHour) {
   let categories = [];
   let seriesData = [];
   
-  for (let h = startHour; h < endHour; h++) {
-    categories.push(`${String(h).padStart(2, '0')}:00`);
-    seriesData.push(filteredData.hourlyTrends[h]);
+  const startMin = startHour * 60;
+  const endMin = endHour * 60;
+  
+  for (let m = startMin; m < endMin; m++) {
+    const hh = Math.floor(m / 60);
+    const mm = m % 60;
+    categories.push(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00 น.`);
+    seriesData.push(filteredData.minuteTrends[m] || 0);
   }
+  
+  // Add the boundary label at the end (e.g. 11:00:00 น. for 11:00 limit) with a null value to match the filter endpoint
+  categories.push(`${String(endHour).padStart(2, '0')}:00:00 น.`);
+  seriesData.push(null);
   
   const options = {
     series: [{
-      name: 'ปริมาณธุรกรรม',
+      name: 'จำนวนการ login',
       data: seriesData
     }],
     chart: {
@@ -311,6 +329,7 @@ function initHourlyChart(filteredData, startHour, endHour) {
     },
     xaxis: {
       categories: categories,
+      tickAmount: 10,
       labels: {
         style: { colors: chartColors.muted }
       }
@@ -358,31 +377,23 @@ function initRollingChart(filteredData, startHour, endHour) {
   
   const options = {
     series: [{
-      name: 'ปริมาณธุรกรรมสะสม 3 ชม.',
+      name: 'จำนวนครั้งการ login',
       data: seriesData
     }],
     chart: {
-      type: 'area',
+      type: 'bar',
       height: 320,
       fontFamily: chartFontFamily,
-      toolbar: { show: false },
-      zoom: { enabled: false }
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 6,
+        columnWidth: '45%'
+      }
     },
     colors: [chartColors.secondary],
     dataLabels: { enabled: false },
-    stroke: {
-      curve: 'smooth',
-      width: 3
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.45,
-        opacityTo: 0.05,
-        stops: [0, 90, 100]
-      }
-    },
     grid: {
       borderColor: 'var(--color-border)',
       strokeDashArray: 4,
