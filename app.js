@@ -157,7 +157,7 @@ function getFilteredData(dateFilter, startHour, endHour) {
       hourlyTrends[h] += hourData.rows;
       
       // Filter by hour range for metrics and distributions
-      if (h >= startHour && h <= endHour) {
+      if (h >= startHour && h < endHour) {
         totalRows += hourData.rows;
         
         // Add users and sites to unique sets
@@ -272,7 +272,7 @@ function initHourlyChart(filteredData, startHour, endHour) {
   let categories = [];
   let seriesData = [];
   
-  for (let h = startHour; h <= endHour; h++) {
+  for (let h = startHour; h < endHour; h++) {
     categories.push(`${String(h).padStart(2, '0')}:00`);
     seriesData.push(filteredData.hourlyTrends[h]);
   }
@@ -345,7 +345,7 @@ function initRollingChart(filteredData, startHour, endHour) {
   let categories = [];
   let seriesData = [];
   
-  const maxStartHour = Math.min(endHour, 21);
+  const maxStartHour = Math.min(endHour - 1, 21);
   for (let h = startHour; h <= maxStartHour; h++) {
     const nextThreeHour = (h + 3) % 24;
     categories.push(`${String(h).padStart(2, '0')}:00 - ${String(nextThreeHour).padStart(2, '0')}:00`);
@@ -740,10 +740,10 @@ function handleFilterChange() {
   let startHour = parseInt(document.getElementById('filter-start-time').value);
   let endHour = parseInt(document.getElementById('filter-end-time').value);
   
-  // Guard clause: ensure startHour is less than or equal to endHour
-  if (startHour > endHour) {
-    document.getElementById('filter-end-time').value = startHour;
-    endHour = startHour;
+  // Guard clause: ensure startHour is less than endHour
+  if (startHour >= endHour) {
+    document.getElementById('filter-end-time').value = startHour + 1;
+    endHour = startHour + 1;
   }
   
   // Show loader overlay briefly for the transition
