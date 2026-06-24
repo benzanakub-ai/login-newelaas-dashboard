@@ -303,6 +303,85 @@ function initHourlyChart(filteredData, startHour, endHour) {
   }
 }
 
+// 1.5. Rolling 3-Hour Trend Area Chart
+function initRollingChart(filteredData, startHour, endHour) {
+  let categories = [];
+  let seriesData = [];
+  
+  const maxStartHour = Math.min(endHour, 21);
+  for (let h = startHour; h <= maxStartHour; h++) {
+    const nextThreeHour = (h + 3) % 24;
+    categories.push(`${String(h).padStart(2, '0')}:00 - ${String(nextThreeHour).padStart(2, '0')}:00`);
+    
+    const h1 = filteredData.hourlyTrends[h] || 0;
+    const h2 = filteredData.hourlyTrends[(h + 1) % 24] || 0;
+    const h3 = filteredData.hourlyTrends[(h + 2) % 24] || 0;
+    seriesData.push(h1 + h2 + h3);
+  }
+  
+  const options = {
+    series: [{
+      name: 'ปริมาณธุรกรรมสะสม 3 ชม.',
+      data: seriesData
+    }],
+    chart: {
+      type: 'area',
+      height: 320,
+      fontFamily: chartFontFamily,
+      toolbar: { show: false },
+      zoom: { enabled: false }
+    },
+    colors: [chartColors.secondary],
+    dataLabels: { enabled: false },
+    stroke: {
+      curve: 'smooth',
+      width: 3
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.45,
+        opacityTo: 0.05,
+        stops: [0, 90, 100]
+      }
+    },
+    grid: {
+      borderColor: 'var(--color-border)',
+      strokeDashArray: 4,
+      padding: { left: 10, right: 10 }
+    },
+    xaxis: {
+      categories: categories,
+      labels: {
+        style: { colors: chartColors.muted }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: chartColors.muted },
+        formatter: function (val) {
+          return val.toLocaleString('th-TH');
+        }
+      }
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return `${val.toLocaleString('th-TH')} ครั้ง`;
+        }
+      }
+    }
+  };
+  
+  if (charts.rolling) {
+    charts.rolling.updateOptions(options);
+  } else {
+    charts.rolling = new ApexCharts(document.querySelector("#chart-rolling"), options);
+    charts.rolling.render();
+  }
+}
+
 // 2. Organization Type Column Bar Chart
 function initSitetypeChart(filteredData) {
   const dist = filteredData.sitetypes;
@@ -643,6 +722,7 @@ function handleFilterChange() {
     // 2. Update UI components
     updateKPIs(filteredData);
     initHourlyChart(filteredData, startHour, endHour);
+    initRollingChart(filteredData, startHour, endHour);
     initSitetypeChart(filteredData);
     initProvinceChart(filteredData);
     initSaoChart(filteredData);
