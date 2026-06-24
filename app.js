@@ -303,50 +303,77 @@ function initHourlyChart(filteredData, startHour, endHour) {
   }
 }
 
-// 2. Organization Type Donut Chart
+// 2. Organization Type Column Bar Chart
 function initSitetypeChart(filteredData) {
   const dist = filteredData.sitetypes;
-  const labels = Object.keys(dist);
-  const series = Object.values(dist);
+  
+  // Sort sitetypes by transaction volume (value) in descending order
+  const sortedSitetypes = Object.entries(dist)
+    .sort((a, b) => b[1] - a[1]);
+    
+  const labels = sortedSitetypes.map(item => item[0]);
+  const seriesData = sortedSitetypes.map(item => item[1]);
   
   const options = {
-    series: series,
+    series: [{
+      name: 'ปริมาณธุรกรรม',
+      data: seriesData
+    }],
     chart: {
-      type: 'donut',
+      type: 'bar',
       height: 320,
-      fontFamily: chartFontFamily
-    },
-    labels: labels,
-    colors: chartColors.colorsList,
-    legend: {
-      position: 'bottom',
-      fontSize: '12px',
-      labels: { colors: chartColors.foreground }
+      fontFamily: chartFontFamily,
+      toolbar: { show: false }
     },
     plotOptions: {
-      pie: {
-        donut: {
-          size: '70%',
-          labels: {
-            show: true,
-            total: {
-              show: true,
-              label: 'ธุรกรรมช่วงที่เลือก',
-              formatter: function (w) {
-                const total = w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-                return total.toLocaleString('th-TH') + ' ครั้ง';
-              },
-              style: {
-                fontSize: '13px',
-                fontWeight: '600',
-                color: chartColors.muted
-              }
-            }
-          }
+      bar: {
+        borderRadius: 6,
+        columnWidth: '50%',
+        distributed: true,
+        dataLabels: {
+          position: 'top' // place labels on top of the bars
         }
       }
     },
-    dataLabels: { enabled: false },
+    colors: chartColors.colorsList,
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        if (val >= 1000) {
+          return (val / 1000).toFixed(1) + 'k';
+        }
+        return val.toString();
+      },
+      offsetY: -20,
+      style: {
+        fontSize: '11px',
+        fontWeight: '700',
+        colors: [chartColors.primary]
+      }
+    },
+    xaxis: {
+      categories: labels,
+      labels: {
+        style: {
+          colors: chartColors.foreground,
+          fontSize: '11px',
+          fontWeight: 600
+        }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: chartColors.muted },
+        formatter: function (val) {
+          return val.toLocaleString('th-TH');
+        }
+      }
+    },
+    grid: {
+      borderColor: 'var(--color-border)',
+      strokeDashArray: 4
+    },
+    legend: { show: false },
     tooltip: {
       y: {
         formatter: function (val) {
@@ -396,7 +423,17 @@ function initProvinceChart(filteredData) {
       }
     },
     colors: chartColors.colorsList,
-    dataLabels: { enabled: false },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return val.toLocaleString('th-TH');
+      },
+      style: {
+        fontSize: '11px',
+        fontWeight: '700',
+        colors: ['#ffffff']
+      }
+    },
     xaxis: {
       categories: categories,
       labels: {
@@ -544,7 +581,7 @@ function initEngagementChart(filteredData) {
 }
 
 // Populate the Positions Table (shows top 15 dynamically based on time range)
-function populateTopPositionsTable(positionsData) {
+function populateTopPositionsTable(positionsData, totalLogins) {
   const tableBody = document.querySelector('#table-positions-body');
   tableBody.innerHTML = '';
   
@@ -558,10 +595,8 @@ function populateTopPositionsTable(positionsData) {
     return;
   }
   
-  const maxCount = Math.max(...sortedPositions.map(p => p.count));
-  
   sortedPositions.forEach((pos, index) => {
-    const percentage = ((pos.count / maxCount) * 100).toFixed(0);
+    const percentage = totalLogins > 0 ? ((pos.count / totalLogins) * 100).toFixed(1) : "0.0";
     const rowHtml = `
       <tr>
         <td style="width: 60px; font-weight: 700; color: var(--color-primary);">${index + 1}</td>
@@ -574,7 +609,7 @@ function populateTopPositionsTable(positionsData) {
             <div style="flex-grow: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
               <div style="width: ${percentage}%; height: 100%; background: var(--color-primary); border-radius: 4px;"></div>
             </div>
-            <span style="font-size: 0.775rem; color: var(--color-text-muted); width: 30px; text-align: right;">${percentage}%</span>
+            <span style="font-size: 0.775rem; color: var(--color-text-muted); width: 45px; text-align: right;">${percentage}%</span>
           </div>
         </td>
       </tr>
@@ -612,7 +647,7 @@ function handleFilterChange() {
     initProvinceChart(filteredData);
     initSaoChart(filteredData);
     initEngagementChart(filteredData);
-    populateTopPositionsTable(filteredData.positions);
+    populateTopPositionsTable(filteredData.positions, filteredData.totalRows);
     
     // Search filter check in case search bar is not empty
     handleSearch();
