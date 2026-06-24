@@ -180,16 +180,16 @@
 
     <!-- Charts Row 1: Primary Metrics -->
     <section class="charts-grid" aria-label="กราฟวิเคราะห์ธุรกรรมรายชั่วโมงและการเชื่อมต่อหน่วยงานตรวจสอบ">
-      <!-- Hourly log volume -->
+      <!-- Rolling Trend Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <div class="chart-title-group">
             <h3>จำนวนครั้งของการ login</h3>
-            <p>วิเคราะห์ตามช่วงเวลา</p>
+            <p>วิเคราะห์ปริมาณงานสะสมเป็นช่วงเวลาแบบหน้าต่างเคลื่อนที่ (3-Hour Moving Window)</p>
           </div>
-          <i data-lucide="clock" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+          <i data-lucide="trending-up" style="color: var(--color-secondary); width: 20px; height: 20px;"></i>
         </div>
-        <div id="chart-hourly" style="min-height: 350px;"></div>
+        <div id="chart-rolling" style="min-height: 320px;"></div>
       </div>
 
       <!-- Audit agency integration (สตง.) -->
@@ -201,21 +201,7 @@
           </div>
           <i data-lucide="activity" style="color: var(--color-accent); width: 20px; height: 20px;"></i>
         </div>
-        <div id="chart-sao" style="min-height: 280px; display: flex; align-items: center; justify-content: center;"></div>
-      </div>
-    </section>
-
-    <!-- Charts Row 1.5: Rolling Trend Chart -->
-    <section style="margin-bottom: 2rem;">
-      <div class="chart-card" style="width: 100%;">
-        <div class="chart-header">
-          <div class="chart-title-group">
-            <h3>จำนวนครั้งของการ login</h3>
-            <p>วิเคราะห์ปริมาณงานสะสมเป็นช่วงเวลาแบบหน้าต่างเคลื่อนที่ (3-Hour Moving Window)</p>
-          </div>
-          <i data-lucide="trending-up" style="color: var(--color-secondary); width: 20px; height: 20px;"></i>
-        </div>
-        <div id="chart-rolling" style="min-height: 320px;"></div>
+        <div id="chart-sao" style="min-height: 320px; display: flex; align-items: center; justify-content: center;"></div>
       </div>
     </section>
 

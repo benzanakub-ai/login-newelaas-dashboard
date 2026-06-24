@@ -276,95 +276,6 @@ function animateCounter(element, targetValue) {
   window.requestAnimationFrame(step);
 }
 
-// 1. Hourly Trend Area Chart (updates to show only the selected hour range)
-function initHourlyChart(filteredData, startHour, endHour) {
-  let categories = [];
-  let seriesData = [];
-  
-  const startMin = startHour * 60;
-  const endMin = endHour * 60;
-  
-  for (let m = startMin; m < endMin; m++) {
-    const hh = Math.floor(m / 60);
-    const mm = m % 60;
-    categories.push(`${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00 น.`);
-    seriesData.push(filteredData.minuteTrends[m] || 0);
-  }
-  
-  // Add the boundary label at the end (e.g. 11:00:00 น. for 11:00 limit) with a null value to match the filter endpoint
-  categories.push(`${String(endHour).padStart(2, '0')}:00:00 น.`);
-  seriesData.push(null);
-  
-  const options = {
-    series: [{
-      name: 'จำนวนครั้งของการ login สะสม',
-      data: seriesData
-    }],
-    chart: {
-      type: 'bar',
-      height: 350,
-      fontFamily: chartFontFamily,
-      toolbar: { show: false }
-    },
-    plotOptions: {
-      bar: {
-        borderRadius: 4,
-        columnWidth: '70%',
-        dataLabels: {
-          position: 'top', // top, center, bottom
-        },
-      }
-    },
-    colors: [chartColors.primary],
-    dataLabels: {
-      enabled: true,
-      formatter: function (val) {
-        if (val === null || val === undefined || val === 0) return '';
-        return val.toLocaleString('th-TH');
-      },
-      offsetY: -20,
-      style: {
-        fontSize: '9px',
-        fontWeight: '700',
-        colors: [chartColors.primary]
-      }
-    },
-    grid: {
-      borderColor: 'var(--color-border)',
-      strokeDashArray: 4,
-      padding: { left: 10, right: 10 }
-    },
-    xaxis: {
-      categories: categories,
-      tickAmount: 10,
-      labels: {
-        style: { colors: chartColors.muted }
-      }
-    },
-    yaxis: {
-      labels: {
-        style: { colors: chartColors.muted },
-        formatter: function (val) {
-          return val.toLocaleString('th-TH');
-        }
-      }
-    },
-    tooltip: {
-      y: {
-        formatter: function (val) {
-          return `${val.toLocaleString('th-TH')} ครั้ง`;
-        }
-      }
-    }
-  };
-  
-  if (charts.hourly) {
-    charts.hourly.updateOptions(options);
-  } else {
-    charts.hourly = new ApexCharts(document.querySelector("#chart-hourly"), options);
-    charts.hourly.render();
-  }
-}
 
 // 1.5. Rolling 3-Hour Trend Area Chart
 function initRollingChart(filteredData, startHour, endHour) {
@@ -617,7 +528,7 @@ function initSaoChart(filteredData) {
     series: series,
     chart: {
       type: 'pie',
-      height: 280,
+      height: 320,
       fontFamily: chartFontFamily
     },
     labels: labels,
@@ -776,7 +687,6 @@ function handleFilterChange() {
     
     // 2. Update UI components
     updateKPIs(filteredData);
-    initHourlyChart(filteredData, startHour, endHour);
     initRollingChart(filteredData, startHour, endHour);
     initSitetypeChart(filteredData);
     initProvinceChart(filteredData);
