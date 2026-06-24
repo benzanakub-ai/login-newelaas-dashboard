@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Fetch Aggregated Log Data
 async function fetchData() {
   try {
-    const response = await fetch('aggregated_data.json');
+    const response = await fetch('aggregated_data.json?t=' + new Date().getTime());
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
