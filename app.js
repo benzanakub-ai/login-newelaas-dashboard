@@ -297,7 +297,7 @@ function initHourlyChart(filteredData, startHour, endHour) {
   
   const options = {
     series: [{
-      name: 'จำนวนการ login',
+      name: 'จำนวนครั้งของการ login สะสม',
       data: seriesData
     }],
     chart: {
