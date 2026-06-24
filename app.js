@@ -301,25 +301,32 @@ function initHourlyChart(filteredData, startHour, endHour) {
       data: seriesData
     }],
     chart: {
-      type: 'area',
+      type: 'bar',
       height: 350,
       fontFamily: chartFontFamily,
-      toolbar: { show: false },
-      zoom: { enabled: false }
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        columnWidth: '70%',
+        dataLabels: {
+          position: 'top', // top, center, bottom
+        },
+      }
     },
     colors: [chartColors.primary],
-    dataLabels: { enabled: false },
-    stroke: {
-      curve: 'smooth',
-      width: 3
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.45,
-        opacityTo: 0.05,
-        stops: [0, 90, 100]
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        if (val === null || val === undefined || val === 0) return '';
+        return val.toLocaleString('th-TH');
+      },
+      offsetY: -20,
+      style: {
+        fontSize: '9px',
+        fontWeight: '700',
+        colors: [chartColors.primary]
       }
     },
     grid: {
