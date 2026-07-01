@@ -178,9 +178,9 @@
 
     </section>
 
-    <!-- Charts Row 1: Primary Metrics -->
-    <section class="charts-grid" aria-label="กราฟวิเคราะห์ธุรกรรมรายชั่วโมงและการเชื่อมต่อหน่วยงานตรวจสอบ">
-      <!-- Rolling Trend Chart -->
+    <!-- Charts Row 1: Primary Metrics (Rolling Windows) -->
+    <section class="charts-grid" aria-label="กราฟวิเคราะห์ปริมาณการ login แบบหน้าต่างเคลื่อนที่ 3 ชั่วโมง และ 2 ชั่วโมง">
+      <!-- 3-Hour Rolling Trend Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <div class="chart-title-group">
@@ -192,16 +192,16 @@
         <div id="chart-rolling" style="min-height: 320px;"></div>
       </div>
 
-      <!-- Audit agency integration (สตง.) -->
+      <!-- 2-Hour Rolling Trend Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <div class="chart-title-group">
-            <h3>ประเภทผู้ใช้งาน</h3>
-            <p>วิเคราะห์สัดส่วนการ login ของ สตง.</p>
+            <h3>จำนวนครั้งของการ login</h3>
+            <p>วิเคราะห์ปริมาณงานสะสมเป็นช่วงเวลาแบบหน้าต่างเคลื่อนที่ (2-Hour Moving Window)</p>
           </div>
-          <i data-lucide="activity" style="color: var(--color-accent); width: 20px; height: 20px;"></i>
+          <i data-lucide="trending-up" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
         </div>
-        <div id="chart-sao" style="min-height: 320px; display: flex; align-items: center; justify-content: center;"></div>
+        <div id="chart-rolling-2h" style="min-height: 320px;"></div>
       </div>
     </section>
 
@@ -231,6 +231,17 @@
         <div id="chart-province" style="min-height: 320px;"></div>
       </div>
 
+      <!-- Audit agency integration (สตง.) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-group">
+            <h3>ประเภทผู้ใช้งาน</h3>
+            <p>วิเคราะห์สัดส่วนการ login ของ สตง.</p>
+          </div>
+          <i data-lucide="activity" style="color: var(--color-accent); width: 20px; height: 20px;"></i>
+        </div>
+        <div id="chart-sao" style="min-height: 320px; display: flex; align-items: center; justify-content: center;"></div>
+      </div>
     </section>
 
     <!-- Standing Positions Card -->

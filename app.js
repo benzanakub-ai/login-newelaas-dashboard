@@ -348,6 +348,77 @@ function initRollingChart(filteredData, startHour, endHour) {
   }
 }
 
+// 1.6. Rolling 2-Hour Trend Bar Chart
+function initRolling2hChart(filteredData, startHour, endHour) {
+  let categories = [];
+  let seriesData = [];
+  
+  const maxStartHour = Math.min(endHour - 1, 22);
+  for (let h = startHour; h <= maxStartHour; h++) {
+    const nextTwoHour = (h + 2) % 24;
+    categories.push(`${String(h).padStart(2, '0')}:00 - ${String(nextTwoHour).padStart(2, '0')}:00`);
+    
+    const h1 = filteredData.hourlyTrends[h] || 0;
+    const h2 = filteredData.hourlyTrends[(h + 1) % 24] || 0;
+    seriesData.push(h1 + h2);
+  }
+  
+  const options = {
+    series: [{
+      name: 'จำนวนครั้งการ login',
+      data: seriesData
+    }],
+    chart: {
+      type: 'bar',
+      height: 320,
+      fontFamily: chartFontFamily,
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 6,
+        columnWidth: '45%'
+      }
+    },
+    colors: [chartColors.primary],
+    dataLabels: { enabled: false },
+    grid: {
+      borderColor: 'var(--color-border)',
+      strokeDashArray: 4,
+      padding: { left: 10, right: 10 }
+    },
+    xaxis: {
+      categories: categories,
+      labels: {
+        style: { colors: chartColors.muted }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: chartColors.muted },
+        formatter: function (val) {
+          return val.toLocaleString('th-TH');
+        }
+      }
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return `${val.toLocaleString('th-TH')} ครั้ง`;
+        }
+      }
+    }
+  };
+  
+  if (charts.rolling2h) {
+    charts.rolling2h.updateOptions(options);
+  } else {
+    charts.rolling2h = new ApexCharts(document.querySelector("#chart-rolling-2h"), options);
+    charts.rolling2h.render();
+  }
+}
+
+
 // 2. Organization Type Column Bar Chart
 function initSitetypeChart(filteredData) {
   const dist = filteredData.sitetypes;
@@ -688,6 +759,7 @@ function handleFilterChange() {
     // 2. Update UI components
     updateKPIs(filteredData);
     initRollingChart(filteredData, startHour, endHour);
+    initRolling2hChart(filteredData, startHour, endHour);
     initSitetypeChart(filteredData);
     initProvinceChart(filteredData);
     initSaoChart(filteredData);
