@@ -418,6 +418,88 @@ function initRolling2hChart(filteredData, startHour, endHour) {
   }
 }
 
+// 1.7. 30-Minute Interval Trend Bar Chart
+function initInterval30mChart(filteredData, startHour, endHour) {
+  let categories = [];
+  let seriesData = [];
+  
+  for (let h = startHour; h < endHour; h++) {
+    // First 30-minute block: h:00 - h:30
+    const startMin1 = h * 60;
+    let sum1 = 0;
+    for (let m = 0; m < 30; m++) {
+      sum1 += filteredData.minuteTrends[startMin1 + m] || 0;
+    }
+    categories.push(`${String(h).padStart(2, '0')}:00 - ${String(h).padStart(2, '0')}:30`);
+    seriesData.push(sum1);
+    
+    // Second 30-minute block: h:30 - (h+1):00
+    const startMin2 = h * 60 + 30;
+    let sum2 = 0;
+    for (let m = 0; m < 30; m++) {
+      sum2 += filteredData.minuteTrends[startMin2 + m] || 0;
+    }
+    const nextHour = (h + 1) % 24;
+    categories.push(`${String(h).padStart(2, '0')}:30 - ${String(nextHour).padStart(2, '0')}:00`);
+    seriesData.push(sum2);
+  }
+  
+  const options = {
+    series: [{
+      name: 'จำนวนครั้งการ login',
+      data: seriesData
+    }],
+    chart: {
+      type: 'bar',
+      height: 320,
+      fontFamily: chartFontFamily,
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        columnWidth: '60%'
+      }
+    },
+    colors: [chartColors.accent],
+    dataLabels: { enabled: false },
+    grid: {
+      borderColor: 'var(--color-border)',
+      strokeDashArray: 4,
+      padding: { left: 10, right: 10 }
+    },
+    xaxis: {
+      categories: categories,
+      labels: {
+        style: { colors: chartColors.muted, fontSize: '10px' }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: chartColors.muted },
+        formatter: function (val) {
+          return val.toLocaleString('th-TH');
+        }
+      }
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return `${val.toLocaleString('th-TH')} ครั้ง`;
+        }
+      }
+    }
+  };
+  
+  if (charts.interval30m) {
+    charts.interval30m.updateOptions(options);
+  } else {
+    charts.interval30m = new ApexCharts(document.querySelector("#chart-interval-30m"), options);
+    charts.interval30m.render();
+  }
+}
+
+
 
 // 2. Organization Type Column Bar Chart
 function initSitetypeChart(filteredData) {
@@ -760,6 +842,7 @@ function handleFilterChange() {
     updateKPIs(filteredData);
     initRollingChart(filteredData, startHour, endHour);
     initRolling2hChart(filteredData, startHour, endHour);
+    initInterval30mChart(filteredData, startHour, endHour);
     initSitetypeChart(filteredData);
     initProvinceChart(filteredData);
     initSaoChart(filteredData);
