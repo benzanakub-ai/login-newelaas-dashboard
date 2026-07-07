@@ -411,6 +411,13 @@ header::before {
   }
 }
 
+.charts-vertical-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .chart-card {
   background: var(--color-card-bg);
   backdrop-filter: blur(20px);
